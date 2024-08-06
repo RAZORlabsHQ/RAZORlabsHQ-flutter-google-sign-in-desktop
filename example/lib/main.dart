@@ -19,32 +19,7 @@ final _googleSignIn = GoogleSignIn(
 
 void main() {
   if (GoogleSignInPlatform.instance case GoogleSignInDesktop instance) {
-    instance.refreshTokenRequest = ({required String clientId, required String refreshToken}) {
-      // Shour return the response of the request to your endpoint
-      return http.post(
-        Uri.parse('YOUR_ENDPOINT'),
-        body: {
-          'client_id': clientId,
-          'refresh_token': refreshToken,
-        },
-      );
-    };
-    instance.fetchTokensRequest = ({
-      required String clientId,
-      required String code,
-      required String codeVerifier,
-      required String redirectUri,
-    }) {
-      // Shour return the response of the request to your endpoint
-      return http.post(
-        Uri.parse('YOUR_ENDPOINT'),
-        body: {
-          'client_id': clientId,
-          'code': code,
-          'code_verifier': codeVerifier,
-        },
-      );
-    };
+    instance.requestsStore = GoogleSignInDesktopRequestsStoreImpl();``
     instance.tokenDataStore = GoogleSignInDesktopTokenDataStore();
   }
 
@@ -241,5 +216,20 @@ class GoogleSignInDesktopTokenDataStore implements GoogleSignInDesktopStore<Goog
   Future<void> set(GoogleSignInDesktopTokenData? value) async {
     // TODO: Store tokens in a secure location that is accessible between sessions.
     _value = value;
+  }
+}
+
+class GoogleSignInDesktopRequestsStoreImpl implements GoogleSignInDesktopRequestsStore {
+  @override
+  Future<Map<String, dynamic>> fetchTokensRequest(
+      {required String clientId, required String code, required String codeVerifier, required String redirectUri}) {
+    // TODO: implement fetchTokensRequest
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Map<String, dynamic>> refreshTokenRequest({required String clientId, required String refreshToken}) {
+    // TODO: implement refreshTokenRequest
+    throw UnimplementedError();
   }
 }

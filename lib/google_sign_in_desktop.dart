@@ -5,6 +5,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/services.dart';
+import 'package:google_sign_in_desktop/src/google_sign_in_desktop_requests_store.dart';
 import 'package:google_sign_in_platform_interface/google_sign_in_platform_interface.dart';
 import 'package:http/http.dart';
 import 'package:url_launcher/url_launcher.dart' as url_launcher;
@@ -21,6 +22,7 @@ import 'src/google_sign_in_desktop_token_data.dart';
 
 export 'src/google_sign_in_desktop_store.dart';
 export 'src/google_sign_in_desktop_token_data.dart';
+export 'src/google_sign_in_desktop_requests_store.dart';
 
 /// Error code indicating there was a failed attempt to recover user authentication.
 const _kFailedToRecoverAuthError = 'failed_to_recover_auth';
@@ -56,10 +58,10 @@ class GoogleSignInDesktop extends GoogleSignInPlatform {
 
   /// The function that creates a token data.
   final GoogleSignInDesktopTokenData Function(
-    Response response, {
+    Map<String, dynamic> body, {
     String? idToken,
     String? refreshToken,
-  }) _createTokenData;
+  }) _createTokenFromStructureData;
 
   /// The function that creates a user data.
   final GoogleSignInUserData Function(
@@ -79,13 +81,7 @@ class GoogleSignInDesktop extends GoogleSignInPlatform {
   final StreamController<GoogleSignInUserData?> _userDataEvents;
 
   late String _clientId;
-  late Future<Response> Function({required String clientId, required String refreshToken}) _refreshTokenRequest;
-  late Future<Response> Function({
-    required String clientId,
-    required String code,
-    required String codeVerifier,
-    required String redirectUri,
-  }) _fetchTokensRequest;
+  late GoogleSignInDesktopRequestsStore _requestsStore;
   late List<String> _scopes;
   late GoogleSignInDesktopStore<GoogleSignInDesktopTokenData> _tokenDataStore;
   GoogleSignInUserData? _userData;
@@ -95,11 +91,6 @@ class GoogleSignInDesktop extends GoogleSignInPlatform {
     String Function(String codeVerifier)? createCodeChallenge,
     String Function(Random random)? createCodeVerifier,
     String Function(Random random)? createState,
-    GoogleSignInDesktopTokenData Function(
-      Response response, {
-      String? idToken,
-      String? refreshToken,
-    })? createTokenData,
     GoogleSignInUserData Function(
       Response response, {
       String? idToken,
@@ -109,11 +100,16 @@ class GoogleSignInDesktop extends GoogleSignInPlatform {
     )? launchUrl,
     Random? random,
     StreamController<GoogleSignInUserData?>? userDataEvents,
+    GoogleSignInDesktopTokenData Function(
+      Map<String, dynamic> body, {
+      String? idToken,
+      String? refreshToken,
+    })? createTokenFromStructureData,
   })  : _client = client ?? Client(),
         _createCodeChallenge = createCodeChallenge ?? create_code_challenge.createCodeChallenge,
         _createCodeVerifier = createCodeVerifier ?? create_code_verifier.createCodeVerifier,
         _createState = createState ?? create_state.createState,
-        _createTokenData = createTokenData ?? create_token_data.createTokenData,
+        _createTokenFromStructureData = createTokenFromStructureData ?? create_token_data.createTokenFromStructureData,
         _createUserData = createUserData ?? create_user_data.createUserData,
         _launchUrl = launchUrl ?? url_launcher.launchUrl,
         _random = random ?? Random.secure(),
@@ -124,20 +120,11 @@ class GoogleSignInDesktop extends GoogleSignInPlatform {
     return _userDataEvents.stream;
   }
 
-  /// Sets the refreshTokenRequest function that is used to refresh the token.
-  set refreshTokenRequest(
-    Future<Response> Function({required String clientId, required String refreshToken}) refreshTokenRequest,
+  /// Sets the request store that is used to send requests to custom end point to protect the client secret.
+  set requestsStore(
+    GoogleSignInDesktopRequestsStore requestsStore,
   ) {
-    _refreshTokenRequest = refreshTokenRequest;
-  }
-
-  /// Set the fetchTokensRequest function that is used to fetch the tokens.
-  set fetchTokensRequest(
-    Future<Response> Function(
-            {required String clientId, required String code, required String codeVerifier, required String redirectUri})
-        fetchTokensRequest,
-  ) {
-    _fetchTokensRequest = fetchTokensRequest;
+    _requestsStore = requestsStore;
   }
 
   /// Sets the token data store that is used to store tokens between sessions.
@@ -212,8 +199,8 @@ class GoogleSignInDesktop extends GoogleSignInPlatform {
 
     final refreshToken = tokenData.refreshToken;
     if (refreshToken != null) {
-      tokenData = _createTokenData(
-        await _refreshTokenRequest(
+      tokenData = _createTokenFromStructureData(
+        await _requestsStore.refreshTokenRequest(
           clientId: _clientId,
           refreshToken: refreshToken,
         ),
@@ -278,8 +265,8 @@ class GoogleSignInDesktop extends GoogleSignInPlatform {
         if (tokenData.isExpired() != false) {
           final refreshToken = tokenData.refreshToken;
           if (refreshToken != null) {
-            tokenData = _createTokenData(
-              await _refreshTokenRequest(
+            tokenData = _createTokenFromStructureData(
+              await _requestsStore.refreshTokenRequest(
                 clientId: _clientId,
                 refreshToken: refreshToken,
               ),
@@ -383,8 +370,8 @@ class GoogleSignInDesktop extends GoogleSignInPlatform {
 
         // https://developers.google.com/identity/protocols/oauth2/native-app#exchange-authorization-code
 
-        final tokenData = _createTokenData(
-          await _fetchTokensRequest(
+        final tokenData = _createTokenFromStructureData(
+          await _requestsStore.fetchTokensRequest(
             clientId: _clientId,
             code: code,
             codeVerifier: codeVerifier,

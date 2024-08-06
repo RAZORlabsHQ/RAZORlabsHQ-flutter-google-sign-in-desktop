@@ -31,17 +31,25 @@ The desktop implementation uses the [Authorization Code Flow with Proof Key for 
    > Your application should store both tokens in a secure, long-lived location that is accessible between different invocations of your application. The refresh token enables your application to obtain a new access token if the one that you have expires. As such, if your application loses the refresh token, the user will need to repeat the OAuth 2.0 consent flow so that your application can obtain a new refresh token.
 
 3. Implement request to your endpoint that will hide the clientSecret.
+Important should add 'date' header from request to return map with 'date' key.
 
 ```dart
 
-Future<Response> Function({required String clientId, required String refreshToken}) refreshTokenRequest
+class GoogleSignInDesktopRequestsStoreImpl implements GoogleSignInDesktopRequestsStore {
+  @override
+  Future<Map<String, dynamic>> fetchTokensRequest(
+      {required String clientId, required String code, required String codeVerifier, required String redirectUri}) {
+    // TODO: implement fetchTokensRequest
+    throw UnimplementedError();
+  }
 
-Future<Response> Function({
-    required String clientId,
-    required String code,
-    required String codeVerifier,
-    required String redirectUri
-  }) fetchTokensRequest
+  @override
+  Future<Map<String, dynamic>> refreshTokenRequest({required String clientId, required String refreshToken}) {
+    // TODO: implement refreshTokenRequest
+    throw UnimplementedError();
+  }
+}
+
 ```
 
 4. Follow the instructions [here](https://developers.google.com/identity/protocols/oauth2/native-app) to create a desktop OAuth client.
@@ -60,33 +68,7 @@ Future<Response> Function({
 
    void main() {
      if (GoogleSignInPlatform.instance case GoogleSignInDesktop instance) {
-       instance.refreshTokenRequest = ({required String clientId, required String refreshToken}) {
-            // Shour return the response of the request to your endpoint
-            return http.post(
-              Uri.parse('YOUR_ENDPOINT'),
-              body: {
-                'client_id': clientId,
-                'refresh_token': refreshToken,
-              },
-            );
-       }
-       instance.fetchTokensRequest = ({
-            required String clientId,
-            required String code,
-            required String codeVerifier,
-            required String redirectUri
-       }) {
-            // Shour return the response of the request to your endpoint
-            return http.post(
-              Uri.parse('YOUR_ENDPOINT'),
-              body: {
-                'client_id': clientId,
-                'code': code,
-                'code_verifier': codeVerifier,
-                'redirect_uri': redirectUri,
-              },
-            );
-       }
+       instance.refreshTokenRequest = const GoogleSignInDesktopRequestsStoreImpl();
        instance.tokenDataStore = const GoogleSignInDesktopTokenDataStore();
      }
    
