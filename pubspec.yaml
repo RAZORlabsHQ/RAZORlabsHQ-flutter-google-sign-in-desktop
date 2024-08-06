@@ -1,6 +1,6 @@
 name: google_sign_in_desktop
 description: Desktop implementation of the google_sign_in plugin. Please note that this implementation is not endorsed.
-version: 0.0.1
+version: 0.0.2
 homepage: https://github.com/RAZORlabsHQ/RAZORlabsHQ-flutter-google-sign-in-desktop.git
 
 environment:
